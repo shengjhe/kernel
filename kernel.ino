@@ -10,12 +10,13 @@ long starttime=0;
 //設定網路卡位址
 byte mac[] = { 0x00, 0x51, 0x56, 0xAC, 0x31, 0x21 };
 
-byte ipaddr []={192,168,2,198};
+byte ipaddr []={192,168,2,77};
 byte netmask[]={255,255,255,0};
 byte getway[]={192,168,2,1};
 byte googledns[]={168,95,1,1};
 char server[] = "192.168.2.1";
 String localAddress="shengjhe";
+String cookie="";
 
 EthernetClient client;
 void setup (){
@@ -28,7 +29,7 @@ void setup (){
   Serial.println("connecting...");
 }
 void loop(){
-  if(Serial.available() >0||millis() > updatatime)
+  if(Serial.available() >0 || millis() > updatatime)
   {
     
     char str =Serial.read();
@@ -64,32 +65,71 @@ void loop(){
       updatatime=millis()+120000;
     }
   }
-   
+
   
 }
 
 
 void sendMessage( )
 {
-  if (client.connect(server, 8080)) {
-      Serial.println("connected");
-      client.print("GET /TMIProject/api/status/");
-      client.print(localAddress);
-      client.print("/");
-      client.print(result);
-      client.println("");
-      client.println("Connection: close");
-      client.println();
-      Serial.print("The message is send");
-      Serial.println(result);
+
+  if (client.connect(server, 8080))
+ {
+     if(cookie == ""){
+              Serial.println("connected  no cookie"); 
+              client.print("GET /TMIProject/api/status/");
+              client.print(localAddress);
+              client.print("/");
+              client.print(result);
+              client.println(" HTTP/1.1");
+              client.println("Host:192.168.2.1");
+              client.println("");
+              client.println("Connection: close");
+              Serial.print("The message is send");
+              Serial.println(result);
+                delay(1000);
+  
+              while (client.available() >0) 
+              {
+                    char c = client.read();
+                    cookie = cookie + c; 
+                        if(cookie.endsWith("Set-Cookie: "))
+                        {
+                           cookie="";
+                        }
+                        if(cookie.endsWith("; Path"))
+                        {
+                            cookie.replace("; Path", "");
+                            Serial.print(cookie);
+                            break;
+                        }
+              }
+     
+     }
+     else 
+     {
+              Serial.println("connected  have cookie"); 
+              Serial.println(cookie);
+              client.print("GET /TMIProject/api/status/");
+              client.print(localAddress);
+              client.print("/");
+              client.print(result);
+              client.println(" HTTP/1.1");
+              client.println("Host:192.168.2.1");
+              client.print("Cookie:");
+              client.println(cookie);
+              client.println("");
+              client.println("Connection: close");
+              Serial.print("The message is send");
+              Serial.println(result);
+     }
+           
   } 
-  else {
+  else
+  {
     Serial.println("connection failed");
   }
-
-  while(client.available()) {
-     delay(50);
-  }
+  
 
    while(client.connected()) {
     delay(50);
