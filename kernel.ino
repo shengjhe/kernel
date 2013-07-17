@@ -75,9 +75,10 @@ void sendMessage( )
 
   if (client.connect(server, 8080))
  {
-     if(cookie == ""){
+     if(cookie == "")
+     {
               Serial.println("connected  no cookie"); 
-              client.print("GET /TMIProject/api/status/");
+              client.print("PUT /TMIProject/api/status/");
               client.print(localAddress);
               client.print("/");
               client.print(result);
@@ -110,7 +111,7 @@ void sendMessage( )
      {
               Serial.println("connected  have cookie"); 
               Serial.println(cookie);
-              client.print("GET /TMIProject/api/status/");
+              client.print("PUT /TMIProject/api/status/");
               client.print(localAddress);
               client.print("/");
               client.print(result);
