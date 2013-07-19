@@ -4,7 +4,7 @@
 /******************************************************
 **              主機參數設定                        **
 ******************************************************/
-int   result=2;
+String result="2";
 long  updatatime=0;
 long starttime=0;
 String HDAddress="shengjhe";
@@ -15,11 +15,12 @@ String HDAddress="shengjhe";
 
 //設定網路卡位址
 byte mac[] = { 0x00, 0x51, 0x56, 0xAC, 0x31, 0x37 };
-byte ipaddr []={192,168,2,114};
+byte ipaddr []={192,168,2,125};
 byte netmask[]={255,255,255,0};
 byte getway[]={192,168,2,1};
 byte googledns[]={168,95,1,1};
 char server[] = "192.168.2.1";
+int serverPort=8080;
 EthernetClient client;
 
 
@@ -28,18 +29,32 @@ EthernetClient client;
 **               加密參數設定                        **
 ******************************************************/
 String md5String="";
+//紀錄MD5編碼後長度
 int md5Stringlen=0;
 String sendMD5String="";
+//團隊自訂加密字串
 String myhashString="SJProject";
 
 
 /******************************************************
 **              伺服器連線相關參數設定             **
 ******************************************************/
-
 String cookie="";
 String randString="";
 String responseMessage="";
+String sendData="";
+String sendCookie="";
+String postString="";
+
+
+/******************************************************
+**              伺服器連線GET/POST參數設定             **
+******************************************************/
+String host="Host: 192.168.2.1";
+String connectClose="Connection: close";
+String ContentType="Content-Type: application/x-www-form-urlencoded";
+
+
 
 
 
@@ -61,7 +76,6 @@ void setup (){
 }
 
 
-
 /******************************************************
 **           Arduino 循環函數                        **
 ******************************************************/
@@ -75,7 +89,7 @@ void loop()
     {
       //代表門窗被開啟
       digitalWrite(13,HIGH);
-      result=1;
+      result="1";
       sendMessage();
       updatatime=millis()+180000;
     }
@@ -83,14 +97,14 @@ void loop()
     {
         //代表門窗是關閉的狀態
        digitalWrite(13,LOW);
-       result=0;
+       result="0";
        sendMessage();
        updatatime=millis()+180000;
     } 
     else if(str ==0x03 && (millis()-starttime)>3000)
     {
-        //代表端點剛開機
-       result=3;
+       //代表端點剛開機
+       result="3";
        sendMessage();
        starttime=millis();
        updatatime=millis()+180000;
@@ -99,9 +113,9 @@ void loop()
     else if (millis() > updatatime)
     {
       //兩分鐘沒收到端點傳來訊息就送出遺失訊號
-      result=2;
+      result="2";
       sendMessage();
-      updatatime=millis()+30000;
+      updatatime=millis()+3000;
     }
   }
   
@@ -117,13 +131,13 @@ void loop()
 void login()
 {
   delay(1000);
-  if (client.connect(server, 8080))
+  if (client.connect(server, serverPort))
  {
               client.print("GET /TMIProject/APP/Users/login/shengjhe");
               client.println(" HTTP/1.1");
-              client.println("Host:192.168.2.1");
+              client.println(host);
               client.println("");
-              client.println("Connection: close");
+              client.println(connectClose);
               delay(1000);
               while (client.available() >0) 
               {
@@ -194,23 +208,27 @@ void encryptMD5()
 
 void sendMessage( )
 {
-      if (client.connect(server, 8080))
+      if (client.connect(server, serverPort))
      {
-                   //判斷Cookie不為空才發送Request
+                  //判斷Cookie不為空才發送Request
                  if(!cookie.equals(""))
                  {
-                          client.print("PUT /TMIProject/APP/Status/");
-                          client.print(sendMD5String);  // 傳送加密字串
-                          client.print("/");
-                          client.print(result);   //傳送偵測狀態結果
-                          client.println(" HTTP/1.1");
-                          client.println("Host:192.168.2.1");
-                          client.print("Cookie:");
-                          client.println(cookie);  //傳送Cookie
-                          client.println("");
-                          client.println("Connection: close");
-                          Serial.print("The message is send");
-                          Serial.println(result);
+                      Serial.println("connected");
+                      sendData = "status="+ result ;
+                      postString="POST /TMIProject/APP/Status/"+ sendMD5String + " HTTP/1.1";
+                      sendCookie= "Cookie: " + cookie;
+                      client.println(postString);
+                      client.println(host);
+                      client.println(sendCookie);
+                      client.println(ContentType);
+                      client.println(connectClose);
+                      client.print("Content-Length: ");
+                      client.println(sendData.length());
+                      client.println();
+                      client.print(sendData);
+                      client.println();
+                      Serial.print("The message is send");
+                      Serial.println(result);
                  }
                  else 
                  {
